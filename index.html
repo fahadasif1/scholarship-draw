@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Scholarship Draw</title>
+<style>
+:root{--bg:#0e1116;--panel:#171b23;--ink:#f4efe6;--mute:#9aa3b2;--gold:#e8b84a;--gold2:#ffd98a;--line:#2a3140;--bad:#e5706a;--ok:#5fcf9a}
+@media (prefers-color-scheme:light){:root{--bg:#0e1116}} /* projector screen is always dark */
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:radial-gradient(1200px 700px at 50% -10%,#1e2635,var(--bg));color:var(--ink);font:16px/1.5 Georgia,'Times New Roman',serif;display:flex;flex-direction:column;min-height:100vh}
+header{padding:16px 24px;display:flex;justify-content:space-between;align-items:center;color:var(--mute);font:600 13px/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+header b{color:var(--gold)}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px;width:min(460px,100%);font-family:system-ui,sans-serif}
+.card h1{font:400 28px Georgia,serif;margin:0 0 4px}.card p{color:var(--mute);margin:0 0 18px}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+select,input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0e1116;color:var(--ink);font-size:16px}
+button{font:600 16px system-ui,sans-serif;border:0;border-radius:12px;padding:14px 22px;cursor:pointer;background:var(--gold);color:#1b1405}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}.row>*{flex:1}
+.err{color:var(--bad);margin-top:12px;font-size:14px;min-height:20px}
+.stage{text-align:center;width:min(1100px,100%)}
+.prize{font:600 clamp(14px,1.6vw,20px) system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.city{font:400 clamp(30px,5vw,64px) Georgia,serif;margin:6px 0 2px}
+.count{color:var(--mute);font:500 clamp(14px,1.6vw,20px) system-ui,sans-serif}
+.window{margin:34px auto;min-height:clamp(140px,26vh,260px);display:flex;flex-direction:column;justify-content:center;align-items:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);width:100%}
+.name{font:400 clamp(36px,8vw,110px)/1.05 Georgia,serif;color:var(--ink);word-break:break-word;padding:0 12px}
+.name.spin{color:var(--mute)}.name.win{color:var(--gold2);text-shadow:0 0 40px #e8b84a66;animation:pop .6s ease-out}
+.meta{margin-top:10px;font:500 clamp(14px,1.8vw,24px) system-ui,sans-serif;color:var(--mute);letter-spacing:.04em}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.big{font-size:clamp(18px,2.2vw,28px);padding:20px 54px;border-radius:999px}
+.small{margin-top:22px;color:var(--mute);font:12px system-ui,sans-serif}
+.hide{display:none!important}
+.badge{display:inline-block;background:#e5706a22;border:1px solid var(--bad);color:var(--bad);padding:4px 12px;border-radius:99px;font:700 12px system-ui;letter-spacing:.12em;margin-left:8px}
+canvas#fx{position:fixed;inset:0;pointer-events:none}
+.slots{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:-8px 0 22px;font-family:system-ui,sans-serif}
+.slot{min-width:130px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--mute)}
+.slot small{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase}.slot b{display:block;font:400 44px Georgia,serif;color:var(--ink);min-height:54px}
+.slot.on{border-color:var(--gold);color:var(--gold)}.slot.done{border-color:var(--ok);color:var(--ok)}
+.kp{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}.kp button{padding:12px 16px;min-width:48px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.log{max-width:520px;margin:14px auto 0;text-align:left;font:13px system-ui,sans-serif;color:var(--mute)}
+</style></head><body>
+<header><div><b>Scholarship Evening</b> · Lucky draw</div><div id="mode"></div></header>
+<main>
+  <section class="card" id="setup">
+    <h1>Draw set-up</h1><p>Staff only. The key is typed here and is not saved.</p>
+    <label for="city">Event</label>
+    <select id="city"></select>
+    <label for="key">Access key</label>
+    <input id="key" type="password" autocomplete="off" placeholder="not needed for Practice">
+    <label for="dirs">Directors pressing a number (0 to 9)</label>
+    <select id="dirs"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+    <div class="row"><button id="load">Load guests</button></div>
+    <div class="err" id="err"></div>
+  </section>
+
+  <section class="stage hide" id="stage">
+    <div class="prize" id="prize"></div>
+    <div class="city" id="cityName"></div>
+    <div class="count" id="count"></div>
+    <div class="window"><div class="name spin" id="name">Ready</div><div class="meta" id="meta"></div></div>
+    <div class="slots hide" id="slots"></div>
+    <div class="row" style="justify-content:center">
+      <button class="big" id="draw">Draw the winner</button>
+      <button class="big hide" id="confirm">Confirm winner</button>
+      <button class="big ghost hide" id="redraw">Not here: draw again</button>
+    </div>
+    <div class="small" id="fp"></div>
+    <div class="log" id="hist"></div>
+  </section>
+</main>
+<canvas id="fx"></canvas>
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id), C = window.DRAW_CONFIG;
+const PRACTICE = 'PRACTICE';
+let cfg, key = '', pool = [], excluded = {}, current = null, busy = false, hist = [];
+
+C.cities.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.label; $('city').append(o); });
+{ const o = document.createElement('option'); o.value = PRACTICE; o.textContent = 'Practice (dummy names, nothing saved)'; $('city').append(o); }
+
+// ---- fair pick: crypto random, rejection sampling (no modulo bias) ----
+function randBelow(n) {
+  const lim = Math.floor(0x100000000 / n) * n, buf = new Uint32Array(1);
+  do { crypto.getRandomValues(buf); } while (buf[0] >= lim);
+  return buf[0] % n;
+}
+async function fingerprint(list) {
+  const txt = list.map(g => g.ref).sort().join('|');
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return Array.from(new Uint8Array(h)).slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+async function api(params) {
+  const u = new URL(cfg.url); u.searchParams.set('key', key);
+  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+  const r = await fetch(u, { redirect: 'follow' }); const j = await r.json();
+  if (!j.ok) throw new Error(j.error === 'denied' ? 'Wrong key' : (j.error || 'Server error'));
+  return j;
+}
+function practicePool() {
+  const f = ['Amina','Bilal','Chloe','Daniyal','Esha','Farhan','Grace','Hamza','Iqra','Jack','Khadija','Liam','Maryam','Noor','Omar','Priya','Qasim','Rida','Sana','Tariq'];
+  const l = ['Khan','Ahmed','Smith','Malik','Hussain','Patel','Raza','Butt','Ali','Shah'];
+  return f.map((n, i) => ({ ref: 'PRA-' + String(i + 1).padStart(3, '0'), name: n + ' ' + l[i % l.length], brand: 'Practice' }));
+}
+function showCount() { $('count').textContent = pool.length + ' checked-in guests in the draw'; }
+
+$('load').onclick = async () => {
+  $('err').textContent = '';
+  const id = $('city').value; key = $('key').value.trim();
+  try {
+    if (id === PRACTICE) { cfg = { id, label: 'Practice' }; pool = practicePool(); excluded = {}; }
+    else {
+      cfg = C.cities.find(c => c.id === id);
+      if (!cfg.url) throw new Error('This event’s backend is not connected yet');
+      if (!key) throw new Error('Type the access key');
+      $('load').disabled = true; $('load').textContent = 'Loading…';
+      const j = await api({ action: 'pool' }); pool = j.pool; excluded = j.excluded;
+    }
+    if (!pool.length) throw new Error('No checked-in guests yet');
+    $('key').value = '';
+    $('setup').classList.add('hide'); $('stage').classList.remove('hide');
+    $('prize').textContent = C.prize; $('cityName').textContent = cfg.label;
+    $('mode').innerHTML = id === PRACTICE ? 'Practice<span class="badge">NOT REAL</span>' : 'Live';
+    showCount();
+    $('fp').textContent = id === PRACTICE ? '' : 'Left out: ' + (excluded.staff || 0) + ' staff, ' + (excluded.duplicates || 0) + ' repeat names, ' + (excluded.alreadyWon || 0) + ' earlier winners';
+  } catch (e) { $('err').textContent = e.message === 'Failed to fetch' ? 'No connection to the server' : e.message; }
+  $('load').disabled = false; $('load').textContent = 'Load guests';
+};
+
+function logServer(outcome, g, note) {
+  if (cfg.id === PRACTICE) return Promise.resolve();
+  return api({ action: 'drawlog', outcome, ref: g.ref, name: g.name, brand: g.brand, size: current ? current.size : pool.length, fp: current ? current.fp : '', note: (note || '') });
+}
+function setBtns(state) { // idle | spinning | picked
+  $('draw').classList.toggle('hide', state !== 'idle');
+  $('confirm').classList.toggle('hide', state !== 'picked');
+  $('redraw').classList.toggle('hide', state !== 'picked');
+}
+// ---- directors' numbers: pressed one by one, hidden, then revealed together ----
+function collectDigits(n) {
+  return new Promise(resolve => {
+    const box = $('slots'), digits = []; box.innerHTML = ''; box.classList.remove('hide');
+    const slots = Array.from({ length: n }, (_, i) => { const d = document.createElement('div'); d.className = 'slot'; d.innerHTML = '<small>Director ' + (i + 1) + '</small><b>·</b>'; box.append(d); return d; });
+    const kp = document.createElement('div'); kp.className = 'kp'; box.after(kp);
+    function mark() { slots.forEach((s, i) => s.className = 'slot' + (i < digits.length ? ' done' : i === digits.length ? ' on' : '')); slots.forEach((s, i) => s.querySelector('b').textContent = i < digits.length ? '✓' : i === digits.length ? '?' : '·'); $('meta').textContent = digits.length < n ? 'Director ' + (digits.length + 1) + ': press a number from 0 to 9 (kept secret until everyone has pressed)' : ''; }
+    function put(d) {
+      if (d < 0 || d > 9 || digits.length >= n) return; digits.push(d); mark();
+      if (digits.length === n) { document.removeEventListener('keydown', onKey); kp.remove(); setTimeout(() => { slots.forEach((s, i) => { s.querySelector('b').textContent = digits[i]; }); setTimeout(() => resolve(digits), 1800); }, 600); }
+    }
+    function onKey(e) { if (/^[0-9]$/.test(e.key)) put(Number(e.key)); }
+    document.addEventListener('keydown', onKey);
+    for (let d = 0; d < 10; d++) { const b = document.createElement('button'); b.textContent = d; b.onclick = () => put(d); kp.append(b); }
+    mark();
+  });
+}
+async function pickIndex(digits, fp, n) { // digits + pool fingerprint + fresh crypto randomness -> SHA-256 -> index
+  const rnd = crypto.getRandomValues(new Uint8Array(16)), rhex = Array.from(rnd).map(b => b.toString(16).padStart(2, '0')).join('');
+  const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(digits.join('') + '|' + fp + '|' + rhex)));
+  let v = 0n; for (let i = 0; i < 8; i++) v = (v << 8n) | BigInt(h[i]);
+  return { index: Number(v % BigInt(n)), rhex };
+}
+$('draw').onclick = async () => {
+  if (busy) return; busy = true; setBtns('spinning'); $('meta').textContent = '';
+  const snapshot = pool.slice(); // locked at the moment of pressing
+  const fp = await fingerprint(snapshot);
+  $('fp').textContent = 'Pool of ' + snapshot.length + ' locked · fingerprint ' + fp;
+  const el = $('name'); el.className = 'name spin'; el.textContent = 'Directors, choose your numbers';
+  const digits = await collectDigits(Number($('dirs').value) || 1);
+  document.querySelectorAll('.kp').forEach(k => k.remove());
+  const { index, rhex } = await pickIndex(digits, fp, snapshot.length), winner = snapshot[index];
+  current = { winner, fp, size: snapshot.length, note: 'Directors: ' + digits.join('') + ' · random ' + rhex };
+  $('meta').textContent = '';
+  const t0 = performance.now(), dur = 7000; let last = 0;
+  await new Promise(done => {
+    (function tick(now) {
+      const p = Math.min(1, (now - t0) / dur), gap = 40 + 520 * p * p * p;
+      if (now - last > gap) { last = now; el.textContent = snapshot[randBelow(snapshot.length)].name; }
+      p < 1 ? requestAnimationFrame(tick) : done();
+    })(t0);
+  });
+  el.textContent = winner.name; el.className = 'name win';
+  $('meta').textContent = winner.brand + ' · ' + winner.ref;
+  $('slots').classList.add('hide');
+  confetti();
+  try { await logServer('DRAWN', winner, current.note); } catch (e) { $('fp').textContent += ' · could not write the log (' + e.message + ')'; }
+  setBtns('picked'); busy = false;
+};
+function addHist(txt) { const d = document.createElement('div'); d.textContent = txt; $('hist').prepend(d); }
+$('confirm').onclick = async () => {
+  const w = current.winner; $('confirm').disabled = true;
+  try { await logServer('WINNER', w, current.note); } catch (e) { alert('Could not save the winner to the log: ' + e.message + '. Write it down: ' + w.ref); }
+  addHist('WINNER: ' + w.name + ' (' + w.ref + ')');
+  pool = pool.filter(g => g.ref !== w.ref); showCount();
+  $('confirm').disabled = false; $('confirm').classList.add('hide'); $('redraw').classList.add('hide');
+  $('draw').textContent = 'Draw another (practice / extra prize)'; $('draw').classList.remove('hide');
+};
+$('redraw').onclick = async () => {
+  const w = current.winner, why = prompt('Why draw again? (e.g. not in the room, ID did not match)', 'Not in the room'); if (why === null) return;
+  try { await logServer('REDRAW', w, why + ' · ' + current.note); } catch (e) { }
+  addHist('Skipped: ' + w.name + ' (' + w.ref + ') – ' + why);
+  pool = pool.filter(g => g.ref !== w.ref); showCount();
+  $('name').className = 'name spin'; $('name').textContent = 'Ready'; $('meta').textContent = '';
+  $('draw').textContent = 'Draw the winner'; setBtns('idle');
+};
+
+// ---- small confetti ----
+function confetti() {
+  const cv = $('fx'), x = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#e8b84a', '#ffd98a', '#f4efe6', '#5fcf9a', '#e5706a'];
+  const ps = Array.from({ length: 160 }, () => ({ x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * .4, vx: (Math.random() - .5) * 3, vy: 2 + Math.random() * 4, s: 5 + Math.random() * 7, c: cols[randBelow(cols.length)], r: Math.random() * 6 }));
+  let f = 0; (function step() {
+    x.clearRect(0, 0, cv.width, cv.height);
+    ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.r += .1; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * .6); x.restore(); });
+    if (++f < 260) requestAnimationFrame(step); else x.clearRect(0, 0, cv.width, cv.height);
+  })();
+}
+</script></body></html>
