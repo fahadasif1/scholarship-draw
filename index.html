@@ -146,11 +146,18 @@ function collectDigits(n) {
     function mark() { slots.forEach((s, i) => s.className = 'slot' + (i < digits.length ? ' done' : i === digits.length ? ' on' : '')); slots.forEach((s, i) => s.querySelector('b').textContent = i < digits.length ? '✓' : i === digits.length ? '?' : '·'); $('meta').textContent = digits.length < n ? 'Director ' + (digits.length + 1) + ': press a number from 0 to 9 (kept secret until everyone has pressed)' : ''; }
     function put(d) {
       if (d < 0 || d > 9 || digits.length >= n) return; digits.push(d); mark();
-      if (digits.length === n) { document.removeEventListener('keydown', onKey); kp.remove(); setTimeout(() => { slots.forEach((s, i) => { s.querySelector('b').textContent = digits[i]; }); setTimeout(() => resolve(digits), 1800); }, 600); }
+      if (digits.length === n) { document.removeEventListener('keydown', onKey); document.removeEventListener('keyup', onUp); kp.remove(); setTimeout(() => { slots.forEach((s, i) => { s.querySelector('b').textContent = digits[i]; }); setTimeout(() => resolve(digits), 1800); }, 600); }
     }
-    function onKey(e) { if (/^[0-9]$/.test(e.key)) put(Number(e.key)); }
-    document.addEventListener('keydown', onKey);
-    for (let d = 0; d < 10; d++) { const b = document.createElement('button'); b.textContent = d; b.onclick = () => put(d); kp.append(b); }
+    // One press = one number: ignore auto-repeat from a held key, require the key to be released before the next director, and pause briefly between directors.
+    let held = false, lockUntil = 0;
+    function onKey(e) {
+      if (!/^[0-9]$/.test(e.key)) return;
+      if (e.repeat || held || performance.now() < lockUntil) return;
+      held = true; lockUntil = performance.now() + 700; put(Number(e.key));
+    }
+    function onUp() { held = false; }
+    document.addEventListener('keydown', onKey); document.addEventListener('keyup', onUp);
+    for (let d = 0; d < 10; d++) { const b = document.createElement('button'); b.textContent = d; b.onclick = () => { if (performance.now() < lockUntil) return; lockUntil = performance.now() + 700; put(d); }; kp.append(b); }
     mark();
   });
 }
